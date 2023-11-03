@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState } from 'react';
 
 import { Section } from './Section/Section';
 
@@ -12,88 +12,75 @@ import initialContacts from './data/contacts.json';
 
 import { nanoid } from 'nanoid';
 
-export class App extends Component {
-  state = {
-    contacts: initialContacts,
-    filter: '',
-  };
+import useLocalStorage from './hooks/useLocalStorage';
 
-  componentDidMount() {
-    const stringifiedContacts = localStorage.getItem('contacts');
-    const parsedContacts = JSON.parse(stringifiedContacts) ?? initialContacts;
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { toastifyOptions } from './toastifyOptions/toastifyOptions';
 
-    this.setState({ products: parsedContacts });
-  }
+export const App = () => {
+  const [contacts, setContacts] = useLocalStorage('contacts', initialContacts);
+  const [filter, setFilter] = useState('');
 
-  componentDidUpdate(_, prevState) {
-    if(prevState.contacts !== this.state.contacts) {
-     const stringifiedContacts = JSON.stringify(this.state.contacts);
-     localStorage.setItem('contacts', stringifiedContacts);
-    }
-  }
-
-
-  addContact = data => {
-    const { contacts } = this.state;
-    if (contacts.some(contact => contact.name === data.name)) {
-      alert(`${data.name} is already in contacts.`);
+  const addContact = newContact => {
+    const isDuplicate = contacts.some(contact =>
+      contact.name.toLowerCase().trim() === newContact.name.toLowerCase().trim()
+    );
+  
+    if (isDuplicate) {
+      toast.error(
+        `${newContact.name}: is already in contacts`,
+        toastifyOptions
+      );
       return;
     }
-    this.setState({
-      contacts: [
-        ...contacts,
-        {
-          id: nanoid(),
-          name: data.name,
-          number: data.number,
-        },
-      ],
-    });
+  
+    setContacts(contacts => [{ ...newContact, id: nanoid() }, ...contacts]);
   };
 
-  onChangeFilter = value => {
-    this.setState({ filter: value });
+  const onChangeFilter = value => {
+    setFilter(value);
   };
 
-  getVisibleContacts = () => {
-    const { filter, contacts } = this.state;
-    const visibleContacts = filter.toLowerCase();
+  const getVisibleContacts = () => {
+    const normalizedFilter = filter.toLowerCase();
 
-    return contacts.filter(contact =>
-      contact.name.toLowerCase().includes(visibleContacts)
+    const filteredContacts = contacts.filter(contact =>
+      contact.name.toLowerCase().trim().includes(normalizedFilter)
     );
+
+    if (normalizedFilter && !filteredContacts.length) {
+      toast.warn(`No contacts matching your request`, toastifyOptions);
+    }
+
+    return filteredContacts;
   };
 
-  deleteContact = contactId => {
-    this.setState(prevState => {
-      return {
-        contacts: prevState.contacts.filter(({ id }) => id !== contactId),
-      };
-    });
+  const deleteContact = contactId => {
+    setContacts(contacts.filter(contact => contact.id !== contactId));
   };
-  render() {
-    const { filter } = this.state;
 
-    const visibleContacts = this.getVisibleContacts();
-
-    return (
-      <>
-        <Section title="Phonebook">
-          <ContactForm onAddContact={this.addContact} />
-          <h2>Contacts</h2>
-          {visibleContacts.length > 0 ? (
-            <Filter value={filter} onChangeFilter={this.onChangeFilter} />
-          ) :(
-            <div>There are no contacts in your phonebook. Please add your first contact!</div>
-          )}
-          {visibleContacts.length > 0 && (
-            <ContactList
-              contacts={visibleContacts}
-              onDeleteContact={this.deleteContact}
-            />
-          )}
-        </Section>
-      </>
-    );
-  }
-}
+  return (
+    <>
+      <Section title="Phonebook">
+        <ContactForm onSubmit={addContact} />
+        <h2>Contacts</h2>
+        {contacts.length > 0 ? (
+          <Filter value={filter} onChangeFilter={onChangeFilter} />
+        ) : (
+          <div>
+            There are no contacts in your phonebook. Please add your first
+            contact!
+          </div>
+        )}
+        {contacts.length > 0 && (
+          <ContactList
+            contacts={getVisibleContacts()}
+            onDeleteContact={deleteContact}
+          />
+        )}
+      </Section>
+      <ToastContainer />
+    </>
+  );
+};
