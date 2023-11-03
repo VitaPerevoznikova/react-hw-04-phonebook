@@ -1,0 +1,46 @@
+.list {
+    margin-top: 30px;
+    color: var(--secondaryTextColor);
+    font-weight: 500;
+    font-size: 18px;
+  }
+  
+  .item {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .item:not(:last-child) {
+    margin-bottom: 10px;
+  }
+  
+  .btnList {
+    width: 60px;
+    padding: 5px;
+    height: auto;
+    cursor: pointer;
+    display: inline-block;
+    font-family: inherit;
+    border-radius: 15px;
+   
+    border: none;
+    outline: none;
+
+    transition: .15s ease-in-out var(--timingFn);
+  }
+  
+  /* .btn:hover {
+    transform: scale(1.1);
+  } */
+
+  .btnList:hover,
+  .btnList:focus {
+  animation: pulse 1s;
+  box-shadow: 0 0 0 0.6em transparent;
+  color: red;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 var(--accentColor); }
+}
+  
